@@ -130,11 +130,11 @@
 <!-- OVERLAY DA ABÓBORA MÁGICA -->
 <div id="pumpkin-overlay">
   <div class="pumpkin-container" id="pumpkin-box">
-    <div class="pumpkin-icon" onclick="closePumpkin()">🎃</div>
+    <div class="pumpkin-icon" id="close-pumpkin-icon">🎃</div>
     <div class="pumpkin-message-box">
       <h2>Registo Concluído!</h2>
       <p id="pumpkin-greeting-text">Bem-vindo à escuridão...</p>
-      <button onclick="closePumpkin()">Entrar na Festa</button>
+      <button id="close-pumpkin-btn">Entrar na Festa</button>
     </div>
   </div>
 </div>
@@ -143,8 +143,8 @@
   <h1>🎃 Assassino Oculto 🦇</h1>
 
   <div class="tab-btn-group">
-    <button class="tab-btn active" onclick="switchTab('public')">Placar & Entrar</button>
-    <button class="tab-btn" onclick="switchTab('master')">Controle (Mestre)</button>
+    <button class="tab-btn active" id="btn-public">Placar & Entrar</button>
+    <button class="tab-btn" id="btn-master">Controle (Mestre)</button>
   </div>
 
   <!-- ABA PÚBLICA / REGISTRO DE JOGADORES -->
@@ -164,7 +164,7 @@
       <label class="file-input-label">Sua Foto de Perfil (Opcional):</label>
       <input type="file" id="self-avatar" accept="image/*">
       
-      <button onclick="joinGame()">Participar da Festa</button>
+      <button id="join-btn">Participar da Festa</button>
     </div>
 
     <div id="public-game-over-container"></div>
@@ -186,7 +186,7 @@
     <div id="master-login">
       <h2>Acesso do Mestre</h2>
       <input type="password" id="master-pass" placeholder="Senha secreta">
-      <button onclick="loginMaster()">Entrar no Controle</button>
+      <button id="login-master-btn">Entrar no Controle</button>
     </div>
 
     <div id="master-panel" style="display: none;">
@@ -195,10 +195,10 @@
       
       <div id="setup-phase">
         <h3>Definir Papéis Secretos</h3>
-        <select id="select-assassin" onchange="setRole('assassin', this.value)">
+        <select id="select-assassin">
           <option value="">-- Selecione o Assassino --</option>
         </select>
-        <select id="select-accomplice" onchange="setRole('accomplice', this.value)">
+        <select id="select-accomplice">
           <option value="">-- Selecione o Comparsa --</option>
         </select>
       </div>
@@ -211,19 +211,19 @@
         <div style="border-top: 1px solid #2d1d1d; padding-top: 6px; margin-bottom: 8px;">
           Erros Acumulados da Turma: <strong id="wrong-guesses-count" style="color: #ff9800;">0</strong> / 4 (Limite)
         </div>
-        <button class="secondary" onclick="registerWrongGuess()" style="margin-top: 5px; background: #b71c1c; color: white;">Registrar Erro Coletivo de Acusação</button>
+        <button class="secondary" id="register-wrong-btn" style="margin-top: 5px; background: #b71c1c; color: white;">Registrar Erro Coletivo de Acusação</button>
       </div>
 
       <h3>Gerenciar Jogadores e Mortes</h3>
       <ul id="master-player-list" class="player-list"></ul>
       
-      <button class="secondary" onclick="resetGame()" style="margin-top: 20px;">Reiniciar Jogo Completo</button>
+      <button class="secondary" id="reset-game-btn" style="margin-top: 20px;">Reiniciar Jogo Completo</button>
     </div>
   </div>
 </div>
 
 <script>
-  let gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v6')) || {
+  let gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v8')) || {
     players: [],
     assassinKills: 0,
     accompliceKills: 0,
@@ -236,7 +236,7 @@
   const MASTER_PASSWORD = "226759";
 
   function saveData() {
-    localStorage.setItem('party_game_state_halloween_v6', JSON.stringify(gameState));
+    localStorage.setItem('party_game_state_halloween_v8', JSON.stringify(gameState));
     render();
   }
 
@@ -245,10 +245,10 @@
     document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
 
     if (tab === 'public') {
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('btn-public').classList.add('active');
       document.getElementById('public-tab').classList.add('active');
     } else {
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('btn-master').classList.add('active');
       document.getElementById('master-tab').classList.add('active');
     }
   }
@@ -303,7 +303,8 @@
   }
 
   function showPumpkinPopup(name) {
-    document.getElementById('pumpkin-greeting-text').innerHTML = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se坐 ao seu lado na festa!`;
+    document.getElementById('pumpkin-greeting-textinnerHTML') = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se senta ao seu lado na festa!`;
+    document.getElementById('pumpkin-greeting-text').innerHTML = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se senta ao seu lado na festa!`;
     
     const overlay = document.getElementById('pumpkin-overlay');
     const box = document.getElementById('pumpkin-box');
@@ -497,8 +498,25 @@
     });
   }
 
+  // LIGAR OS BOTÕES DE FORMA SEGURA VIA JAVASCRIPT
+  document.getElementById('btn-public').addEventListener('click', () => switchTab('public'));
+  document.getElementById('btn-master').addEventListener('click', () => switchTab('master'));
+  document.getElementById('join-btn').addEventListener('click', joinGame);
+  document.getElementById('login-master-btn').addEventListener('click', loginMaster);
+  document.getElementById('register-wrong-btn').addEventListener('click', registerWrongGuess);
+  document.getElementById('reset-game-btn').addEventListener('click', resetGame);
+  document.getElementById('close-pumpkin-icon').addEventListener('click', closePumpkin);
+  document.getElementById('close-pumpkin-btn').addEventListener('click', closePumpkin);
+
+  document.getElementById('select-assassin').addEventListener('change', function() {
+    setRole('assassin', this.value);
+  });
+  document.getElementById('select-accomplice').addEventListener('change', function() {
+    setRole('accomplice', this.value);
+  });
+
   window.addEventListener('storage', () => {
-    gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v6')) || gameState;
+    gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v8')) || gameState;
     render();
   });
 
