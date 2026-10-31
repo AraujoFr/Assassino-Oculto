@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assassino Oculto - Jogo da Festa</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --accent-red: #8b0000;
+      --accent-bright-red: #d32f2f;
+      --text: #e0e0e0;
+      --subtext: #a0a0a0;
+      --border: #333;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 500px; background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    
+    h1, h2, h3 { text-align: center; margin-bottom: 15px; color: #fff; }
+    h1 { color: var(--accent-bright-red); text-transform: uppercase; letter-spacing: 1.5px; font-size: 1.6rem; }
+    
+    .tab-btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 10px; border: 1px solid var(--border); background: #2a2a2a; color: var(--text); font-weight: bold; cursor: pointer; border-radius: 6px; }
+    .tab-btn.active { background: var(--accent-red); color: white; border-color: var(--accent-bright-red); }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    input, button, select { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border); background: #2a2a2a; color: #fff; font-size: 1rem; }
+    button { background: var(--accent-red); font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+    button:hover { background: var(--accent-bright-red); }
+    button.secondary { background: #444; }
+    button.secondary:hover { background: #555; }
+
+    .welcome-banner { background: #251616; border: 1px solid var(--accent-red); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+    .welcome-banner h3 { color: #ff8a80; margin-bottom: 5px; }
+    .welcome-banner p { font-size: 0.9rem; color: var(--subtext); }
+
+    .counter-box { background: #252525; padding: 12px; border-radius: 6px; text-align: center; margin-bottom: 15px; border: 1px solid #3d3d3d; }
+    .counter-number { font-size: 1.4rem; font-weight: bold; color: var(--accent-bright-red); }
+
+    .player-list { list-style: none; margin-top: 10px; }
+    .player-card { background: #2a2a2a; border-radius: 8px; padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #4caf50; }
+    .player-card.dead { border-left-color: var(--accent-bright-red); opacity: 0.6; background: #1a1a1a; }
+    .player-card.dead .name { text-decoration: line-through; color: var(--subtext); }
+    
+    .player-info { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #444; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 0.9rem; }
+
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+    .badge-alive { background: #1b5e20; color: #a5d6a7; }
+    .badge-dead { background: #b71c1c; color: #ffcdd2; }
+    
+    .action-btn-group { display: flex; flex-direction: column; gap: 4px; }
+    .kill-btn { width: auto; padding: 5px 10px; margin: 0; font-size: 0.75rem; }
+    .role-badge { font-size: 0.75rem; padding: 3px 6px; border-radius: 4px; background: #333; margin-left: 5px; }
+    .role-assassin { background: #b71c1c; color: white; }
+    .role-accomplice { background: #e65100; color: white; }
+
+    .game-over-banner { background: #b71c1c; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+    
+    .file-input-label { display: block; text-align: left; font-size: 0.85rem; color: var(--subtext); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Assassino Oculto</h1>
+
+  <div class="tab-btn-group">
+    <button class="tab-btn active" onclick="switchTab('public')">Placar & Entrar</button>
+    <button class="tab-btn" onclick="switchTab('master')">Controle (Mestre)</button>
+  </div>
+
+  <!-- ABA PÚBLICA / REGISTRO DE JOGADORES -->
+  <div id="public-tab" class="section active">
+    
+    <div class="welcome-banner">
+      <h3>Bem-vindo ao Jogo!</h3>
+      <p>Cuidado para não morrer antes do dia amanhecer... Insira seu nome e sua foto abaixo para entrar na festa.</p>
+    </div>
+
+    <!-- Formulário para o convidado entrar -->
+    <div class="counter-box" style="text-align: left;">
+      <h3 style="text-align: center; margin-bottom: 10px; color: #fff;">Entrar na Partida</h3>
+      <label class="file-input-label">Seu Nome / Apelido:</label>
+      <input type="text" id="self-name" placeholder="Ex: João da Silva">
+      
+      <label class="file-input-label">Sua Foto de Perfil (Opcional):</label>
+      <input type="file" id="self-avatar" accept="image/*">
+      
+      <button onclick="joinGame()">Participar da Festa</button>
+    </div>
+
+    <div id="public-game-over-container"></div>
+    <h2>Status dos Jogadores</h2>
+    
+    <div class="counter-box">
+      <div>Mortes restantes do Comparsa: <span id="public-accomplice-kills" class="counter-number">3/3</span></div>
+      <div style="margin-top: 8px; border-top: 1px solid #3d3d3d; padding-top: 8px;">
+        Erros de Acusação da Turma: <span id="public-wrong-guesses" class="counter-number" style="color: #ff9800;">0 / 4</span>
+      </div>
+    </div>
+
+    <ul id="public-player-list" class="player-list"></ul>
+  </div>
+
+  <!-- ABA DO MESTRE -->
+  <div id="master-tab" class="section">
+    <div id="master-login">
+      <h2>Acesso do Mestre</h2>
+      <input type="password" id="master-pass" placeholder="Senha padrão: 1234">
+      <button onclick="loginMaster()">Entrar no Controle</button>
+    </div>
+
+    <div id="master-panel" style="display: none;">
+      <h2>Painel de Controle</h2>
+      <div id="master-game-over-container"></div>
+      
+      <div id="setup-phase">
+        <h3>Definir Papéis Secretos</h3>
+        <select id="select-assassin" onchange="setRole('assassin', this.value)">
+          <option value="">-- Selecione o Assassino --</option>
+        </select>
+        <select id="select-accomplice" onchange="setRole('accomplice', this.value)">
+          <option value="">-- Selecione o Comparsa --</option>
+        </select>
+      </div>
+
+      <hr style="border-color: var(--border); margin: 15px 0;">
+
+      <div class="counter-box">
+        <div>Vítimas do Comparsa: <strong id="accomplice-kills-count">0</strong> / 3</div>
+        <div style="margin-top: 8px; border-top: 1px solid #3d3d3d; padding-top: 8px;">
+          Erros Acumulados da Turma: <strong id="wrong-guesses-count" style="color: #ff9800;">0</strong> / 4 (Limite)
+        </div>
+        <button class="secondary" onclick="registerWrongGuess()" style="margin-top: 10px; background: #d84315;">Registrar Erro Coletivo de Acusação</button>
+      </div>
+
+      <h3>Gerenciar Jogadores e Mortes</h3>
+      <ul id="master-player-list" class="player-list"></ul>
+      
+      <button class="secondary" onclick="resetGame()" style="margin-top: 20px;">Reiniciar Jogo Completo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let gameState = JSON.parse(localStorage.getItem('party_game_state_v4')) || {
+    players: [],
+    accompliceKills: 0,
+    maxAccompliceKills: 3,
+    wrongGuesses: 0,
+    maxWrongGuesses: 4,
+    gameOver: false,
+    winner: null
+  };
+
+  const MASTER_PASSWORD = "1234";
+
+  function saveData() {
+    localStorage.setItem('party_game_state_v4', JSON.stringify(gameState));
+    render();
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+
+    if (tab === 'public') {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('public-tab').classList.add('active');
+    } else {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('master-tab').classList.add('active');
+    }
+  }
+
+  function loginMaster() {
+    const pass = document.getElementById('master-pass').value;
+    if (pass === MASTER_PASSWORD) {
+      document.getElementById('master-login').style.display = 'none';
+      document.getElementById('master-panel').style.display = 'block';
+    } else {
+      alert('Senha incorreta!');
+    }
+  }
+
+  // Função para o próprio convidado entrar com nome e foto
+  function joinGame() {
+    const nameInput = document.getElementById('self-name');
+    const fileInput = document.getElementById('self-avatar');
+    const name = nameInput.value.trim();
+
+    if (!name) {
+      alert('Por favor, digite seu nome ou apelido!');
+      return;
+    }
+
+    const file = fileInput.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        addPlayerToState(name, e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      addPlayerToState(name, null); // Sem foto
+    }
+  }
+
+  function addPlayerToState(name, avatarUrl) {
+    gameState.players.push({
+      id: Date.now(),
+      name: name,
+      avatar: avatarUrl,
+      alive: true,
+      role: 'victim',
+      killedBy: null
+    });
+
+    document.getElementById('self-name').value = '';
+    document.getElementById('self-avatar').value = '';
+    alert('Registrado com sucesso! Cuidado para não ser pego na festa.');
+    saveData();
+  }
+
+  function registerWrongGuess() {
+    gameState.wrongGuesses++;
+    if (gameState.wrongGuesses >= gameState.maxWrongGuesses) {
+      alert('Atenção! A turma estourou o limite de 4 erros de acusação!');
+    } else {
+      alert(`Erro registrado! A turma já acumula ${gameState.wrongGuesses}/${gameState.maxWrongGuesses} erros.`);
+    }
+    saveData();
+  }
+
+  function toggleStatus(id, killedByRole = 'assassin') {
+    const player = gameState.players.find(p => p.id === id);
+    if (!player) return;
+
+    if (player.alive) {
+      if (killedByRole === 'accomplice') {
+        if (gameState.accompliceKills >= gameState.maxAccompliceKills) {
+          alert('O comparsa já atingiu o limite de 3 eliminações!');
+          return;
+        }
+        gameState.accompliceKills++;
+      }
+      player.alive = false;
+      player.killedBy = killedByRole;
+
+      if (player.role === 'assassin') {
+        gameState.gameOver = true;
+        gameState.winner = 'population';
+      }
+    } else {
+      if (player.killedBy === 'accomplice') {
+        gameState.accompliceKills = Math.max(0, gameState.accompliceKills - 1);
+      }
+      player.alive = true;
+      player.killedBy = null;
+      
+      if (player.role === 'assassin' && gameState.winner === 'population') {
+        gameState.gameOver = false;
+        gameState.winner = null;
+      }
+    }
+
+    saveData();
+  }
+
+  function setRole(role, id) {
+    gameState.players.forEach(p => {
+      if (p.role === role) p.role = 'victim';
+      if (p.id == id) p.role = role;
+    });
+    saveData();
+  }
+
+  function removePlayer(id) {
+    if (confirm('Deseja remover este jogador?')) {
+      gameState.players = gameState.players.filter(p => p.id !== id);
+      saveData();
+    }
+  }
+
+  function resetGame() {
+    if (confirm('Deseja mesmo reiniciar a partida inteira?')) {
+      gameState = { players: [], accompliceKills: 0, maxAccompliceKills: 3, wrongGuesses: 0, maxWrongGuesses: 4, gameOver: false, winner: null };
+      saveData();
+    }
+  }
+
+  function render() {
+    let bannerHTML = '';
+    if (gameState.gameOver && gameState.winner === 'population') {
+      bannerHTML = `
+        <div class="game-over-banner">
+          <h2>🎉 A POPULAÇÃO VENCEU! 🎉</h2>
+          <p>O Assassino foi descoberto! A justiça foi feita na festa.</p>
+        </div>
+      `;
+    }
+    document.getElementById('public-game-over-container').innerHTML = bannerHTML;
+    document.getElementById('master-game-over-container').innerHTML = bannerHTML;
+
+    // Renderizar Placar Público
+    const publicList = document.getElementById('public-player-list');
+    publicList.innerHTML = '';
+    
+    gameState.players.forEach(player => {
+      const li = document.createElement('li');
+      li.className = `player-card ${player.alive ? '' : 'dead'}`;
+      
+      const avatarHTML = player.avatar 
+        ? `<img src="${player.avatar}" class="avatar">` 
+        : `<div class="avatar">${player.name.charAt(0).toUpperCase()}</div>`;
+
+      li.innerHTML = `
+        <div class="player-info">
+          ${avatarHTML}
+          <span class="name">${player.name}</span>
+        </div>
+        <span class="badge ${player.alive ? 'badge-alive' : 'badge-dead'}">
+          ${player.alive ? 'VIVO' : 'ELIMINADO'}
+        </span>
+      `;
+      publicList.appendChild(li);
+    });
+
+    document.getElementById('public-accomplice-kills').innerText = 
+      `${gameState.maxAccompliceKills - gameState.accompliceKills}/${gameState.maxAccompliceKills}`;
+    document.getElementById('public-wrong-guesses').innerText = 
+      `${gameState.wrongGuesses} / ${gameState.maxWrongGuesses}`;
+    
+    // Renderizar Painel do Mestre
+    const masterList = document.getElementById('master-player-list');
+    const selectAssassin = document.getElementById('select-assassin');
+    const selectAccomplice = document.getElementById('select-accomplice');
+
+    masterList.innerHTML = '';
+    selectAssassin.innerHTML = '<option value="">-- Selecione o Assassino --</option>';
+    selectAccomplice.innerHTML = '<option value="">-- Selecione o Comparsa --</option>';
+
+    document.getElementById('accomplice-kills-count').innerText = gameState.accompliceKills;
+    document.getElementById('wrong-guesses-count').innerText = gameState.wrongGuesses;
+
+    gameState.players.forEach(player => {
+      const optA = document.createElement('option');
+      optA.value = player.id;
+      optA.innerText = player.name;
+      if (player.role === 'assassin') optA.selected = true;
+      selectAssassin.appendChild(optA);
+
+      const optC = document.createElement('option');
+      optC.value = player.id;
+      optC.innerText = player.name;
+      if (player.role === 'accomplice') optC.selected = true;
+      selectAccomplice.appendChild(optC);
+
+      const li = document.createElement('li');
+      li.className = `player-card ${player.alive ? '' : 'dead'}`;
+      
+      let roleLabel = '';
+      if (player.role === 'assassin') roleLabel = '<span class="role-badge role-assassin">Assassino</span>';
+      if (player.role === 'accomplice') roleLabel = '<span class="role-badge role-accomplice">Comparsa</span>';
+
+      const avatarHTML = player.avatar 
+        ? `<img src="${player.avatar}" class="avatar">` 
+        : `<div class="avatar">${player.name.charAt(0).toUpperCase()}</div>`;
+
+      li.innerHTML = `
+        <div class="player-info">
+          ${avatarHTML}
+          <div>
+            <span class="name">${player.name}</span> ${roleLabel}
+          </div>
+        </div>
+        <div class="action-btn-group">
+          ${player.alive ? `
+            <div style="display: flex; gap: 4px;">
+              <button class="kill-btn" style="background: #b71c1c;" onclick="toggleStatus(${player.id}, 'assassin')">Morte Assassino</button>
+              <button class="kill-btn" style="background: #e65100;" onclick="toggleStatus(${player.id}, 'accomplice')">Morte Comparsa</button>
+            </div>
+          ` : `
+            <button class="kill-btn secondary" onclick="toggleStatus(${player.id})">Reviver</button>
+          `}
+          <button class="kill-btn secondary" style="background: #333; margin-top: 2px;" onclick="removePlayer(${player.id})">Remover</button>
+        </div>
+      `;
+      masterList.appendChild(li);
+    });
+  }
+
+  window.addEventListener('storage', () => {
+    gameState = JSON.parse(localStorage.getItem('party_game_state_v4')) || gameState;
+    render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>
