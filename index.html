@@ -62,6 +62,8 @@
 
     .game-over-banner { background: #b71c1c; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
     .file-input-label { display: block; text-align: left; font-size: 0.85rem; color: var(--subtext); margin-bottom: 4px; }
+    
+    .sync-status { text-align: center; font-size: 0.75rem; color: var(--subtext); margin-bottom: 10px; }
 
     /* ANIMAÇÃO DA ABÓBORA DE HALLOWEEN */
     #pumpkin-overlay {
@@ -141,6 +143,7 @@
 
 <div class="container">
   <h1>🎃 Assassino Oculto 🦇</h1>
+  <div class="sync-status" id="sync-status-text">☁️ Ligando à nuvem da festa...</div>
 
   <div class="tab-btn-group">
     <button class="tab-btn active" id="btn-public">Placar & Entrar</button>
@@ -193,6 +196,14 @@
       <h2>Painel de Controle</h2>
       <div id="master-game-over-container"></div>
       
+      <!-- ADICIONAR JOGADOR DIRETAMENTE PELO MESTRE -->
+      <div class="counter-box" style="text-align: left; background: #22120c; border-color: var(--accent-orange);">
+        <h3 style="text-align: center; color: var(--accent-orange); margin-bottom: 8px;">Adicionar Jogador Manualmente</h3>
+        <label class="file-input-label">Nome do Convidado:</label>
+        <input type="text" id="master-manual-name" placeholder="Ex: Maria">
+        <button id="add-manual-btn" style="margin-bottom: 0;">Adicionar à Partida</button>
+      </div>
+
       <div id="setup-phase">
         <h3>Definir Papéis Secretos</h3>
         <select id="select-assassin">
@@ -223,7 +234,10 @@
 </div>
 
 <script>
-  let gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v8')) || {
+  // Chave única na nuvem para o teu jogo
+  const CLOUD_URL = 'https://kvdb.io/araujofr_halloween_festa_2026/state';
+
+  let gameState = {
     players: [],
     assassinKills: 0,
     accompliceKills: 0,
@@ -235,9 +249,38 @@
 
   const MASTER_PASSWORD = "226759";
 
+  // Função para guardar na nuvem
   function saveData() {
-    localStorage.setItem('party_game_state_halloween_v8', JSON.stringify(gameState));
-    render();
+    document.getElementById('sync-status-text').innerText = '☁️ A sincronizar com a nuvem...';
+    fetch(CLOUD_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(gameState)
+    })
+    .then(() => {
+      document.getElementById('sync-status-text').innerText = '✅ Sincronizado em tempo real';
+      render();
+    })
+    .catch(() => {
+      document.getElementById('sync-status-text').innerText = '⚠️ Erro ao ligar à nuvem (a usar modo local)';
+      render();
+    });
+  }
+
+  // Função para buscar dados da nuvem periodicamente
+  function loadData() {
+    fetch(CLOUD_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.players) {
+          gameState = data;
+          render();
+          document.getElementById('sync-status-text').innerText = '✅ Sincronizado em tempo real';
+        }
+      })
+      .catch(() => {
+        document.getElementById('sync-status-text').innerText = '⚠️ A aguardar ligação à nuvem...';
+      });
   }
 
   function switchTab(tab) {
@@ -285,9 +328,31 @@
     }
   }
 
+  function addManualPlayer() {
+    const nameInput = document.getElementById('master-manual-name');
+    const name = nameInput.value.trim();
+    if (!name) {
+      alert('Digite o nome do jogador!');
+      return;
+    }
+
+    gameState.players.push({
+      id: Date.now() + Math.random(),
+      name: name,
+      avatar: null,
+      alive: true,
+      role: 'victim',
+      killedBy: null
+    });
+
+    nameInput.value = '';
+    saveData();
+    alert(`Jogador(a) ${name} adicionado com sucesso!`);
+  }
+
   function processRegistration(name, avatarUrl) {
     gameState.players.push({
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       name: name,
       avatar: avatarUrl,
       alive: true,
@@ -303,7 +368,6 @@
   }
 
   function showPumpkinPopup(name) {
-    document.getElementById('pumpkin-greeting-textinnerHTML') = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se senta ao seu lado na festa!`;
     document.getElementById('pumpkin-greeting-text').innerHTML = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se senta ao seu lado na festa!`;
     
     const overlay = document.getElementById('pumpkin-overlay');
@@ -498,10 +562,11 @@
     });
   }
 
-  // LIGAR OS BOTÕES DE FORMA SEGURA VIA JAVASCRIPT
+  // EVENT LISTENERS
   document.getElementById('btn-public').addEventListener('click', () => switchTab('public'));
   document.getElementById('btn-master').addEventListener('click', () => switchTab('master'));
   document.getElementById('join-btn').addEventListener('click', joinGame);
+  document.getElementById('add-manual-btn').addEventListener('click', addManualPlayer);
   document.getElementById('login-master-btn').addEventListener('click', loginMaster);
   document.getElementById('register-wrong-btn').addEventListener('click', registerWrongGuess);
   document.getElementById('reset-game-btn').addEventListener('click', resetGame);
@@ -515,12 +580,9 @@
     setRole('accomplice', this.value);
   });
 
-  window.addEventListener('storage', () => {
-    gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v8')) || gameState;
-    render();
-  });
-
-  render();
+  // Carregar dados iniciais e atualizar a cada 3 segundos em todos os telemóveis
+  loadData();
+  setInterval(loadData, 3000);
 </script>
 
 </body>
