@@ -20,10 +20,10 @@
     .container { width: 100%; max-width: 500px; background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 25px rgba(255, 111, 0, 0.15); position: relative; }
     
     h1, h2, h3 { text-align: center; margin-bottom: 15px; color: #fff; }
-    h1 { color: var(--accent-orange); text-transform: uppercase; letter-spacing: 2px; font-size: 1.6rem; text-shadow: 0 0 10px rgba(255, 111, 0, 0.4); }
+    h1 { color: var(--accent-orange); text-transform: uppercase; letter-spacing: 1px; font-size: 1.4rem; text-shadow: 0 0 10px rgba(255, 111, 0, 0.4); }
     
-    .tab-btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
-    .tab-btn { flex: 1; padding: 10px; border: 1px solid var(--border); background: #1f1414; color: var(--text); font-weight: bold; cursor: pointer; border-radius: 6px; }
+    .tab-btn-group { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 12px 6px; border: 1px solid var(--border); background: #1f1414; color: var(--text); font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 0.9rem; text-align: center; }
     .tab-btn.active { background: var(--accent-orange); color: #000; border-color: #ffa000; }
 
     .section { display: none; }
@@ -223,7 +223,7 @@
 </div>
 
 <script>
-  let gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v4')) || {
+  let gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v6')) || {
     players: [],
     assassinKills: 0,
     accompliceKills: 0,
@@ -236,7 +236,7 @@
   const MASTER_PASSWORD = "226759";
 
   function saveData() {
-    localStorage.setItem('party_game_state_halloween_v4', JSON.stringify(gameState));
+    localStorage.setItem('party_game_state_halloween_v6', JSON.stringify(gameState));
     render();
   }
 
@@ -303,7 +303,7 @@
   }
 
   function showPumpkinPopup(name) {
-    document.getElementById('pumpkin-greeting-text').innerHTML = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se senta ao seu lado na festa!`;
+    document.getElementById('pumpkin-greeting-text').innerHTML = `Aviso mortal para <b>${name}</b>:<br>A noite caiu... Cuidado com quem se坐 ao seu lado na festa!`;
     
     const overlay = document.getElementById('pumpkin-overlay');
     const box = document.getElementById('pumpkin-box');
@@ -419,4 +419,91 @@
       li.className = `player-card ${player.alive ? '' : 'dead'}`;
       
       const avatarHTML = player.avatar 
-        ? `<img src="${player.avatar}"
+        ? `<img src="${player.avatar}" class="avatar">` 
+        : `<div class="avatar">${player.name.charAt(0).toUpperCase()}</div>`;
+
+      li.innerHTML = `
+        <div class="player-info">
+          ${avatarHTML}
+          <span class="name">${player.name}</span>
+        </div>
+        <span class="badge ${player.alive ? 'badge-alive' : 'badge-dead'}">
+          ${player.alive ? 'VIVO' : 'ELIMINADO'}
+        </span>
+      `;
+      publicList.appendChild(li);
+    });
+
+    document.getElementById('public-assassin-kills').innerText = gameState.assassinKills;
+    document.getElementById('public-accomplice-kills').innerText = gameState.accompliceKills;
+    document.getElementById('public-wrong-guesses').innerText = `${gameState.wrongGuesses} / ${gameState.maxWrongGuesses}`;
+    
+    const masterList = document.getElementById('master-player-list');
+    const selectAssassin = document.getElementById('select-assassin');
+    const selectAccomplice = document.getElementById('select-accomplice');
+
+    masterList.innerHTML = '';
+    selectAssassin.innerHTML = '<option value="">-- Selecione o Assassino --</option>';
+    selectAccomplice.innerHTML = '<option value="">-- Selecione o Comparsa --</option>';
+
+    document.getElementById('assassin-kills-count').innerText = gameState.assassinKills;
+    document.getElementById('accomplice-kills-count').innerText = gameState.accompliceKills;
+    document.getElementById('wrong-guesses-count').innerText = gameState.wrongGuesses;
+
+    gameState.players.forEach(player => {
+      const optA = document.createElement('option');
+      optA.value = player.id;
+      optA.innerText = player.name;
+      if (player.role === 'assassin') optA.selected = true;
+      selectAssassin.appendChild(optA);
+
+      const optC = document.createElement('option');
+      optC.value = player.id;
+      optC.innerText = player.name;
+      if (player.role === 'accomplice') optC.selected = true;
+      selectAccomplice.appendChild(optC);
+
+      const li = document.createElement('li');
+      li.className = `player-card ${player.alive ? '' : 'dead'}`;
+      
+      let roleLabel = '';
+      if (player.role === 'assassin') roleLabel = '<span class="role-badge role-assassin">Assassino</span>';
+      if (player.role === 'accomplice') roleLabel = '<span class="role-badge role-accomplice">Comparsa</span>';
+
+      const avatarHTML = player.avatar 
+        ? `<img src="${player.avatar}" class="avatar">` 
+        : `<div class="avatar">${player.name.charAt(0).toUpperCase()}</div>`;
+
+      li.innerHTML = `
+        <div class="player-info">
+          ${avatarHTML}
+          <div>
+            <span class="name">${player.name}</span> ${roleLabel}
+          </div>
+        </div>
+        <div class="action-btn-group">
+          ${player.alive ? `
+            <div style="display: flex; gap: 4px;">
+              <button class="kill-btn" style="background: #b71c1c; color: white;" onclick="toggleStatus(${player.id}, 'assassin')">Morte Assassino</button>
+              <button class="kill-btn" style="background: #e65100; color: white;" onclick="toggleStatus(${player.id}, 'accomplice')">Morte Comparsa</button>
+            </div>
+          ` : `
+            <button class="kill-btn secondary" onclick="toggleStatus(${player.id})">Reviver</button>
+          `}
+          <button class="kill-btn secondary" style="background: #2a1a1a; margin-top: 2px;" onclick="removePlayer(${player.id})">Remover</button>
+        </div>
+      `;
+      masterList.appendChild(li);
+    });
+  }
+
+  window.addEventListener('storage', () => {
+    gameState = JSON.parse(localStorage.getItem('party_game_state_halloween_v6')) || gameState;
+    render();
+  });
+
+  render();
+</script>
+
+</body>
+</html>
